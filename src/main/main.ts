@@ -12,8 +12,12 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import LCUConnector from 'lcu-connector';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import Aggregation from './utils/aggregation';
+
+const connector = new LCUConnector();
 
 class AppUpdater {
   constructor() {
@@ -24,12 +28,6 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
-});
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -85,6 +83,14 @@ const createWindow = async () => {
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   mainWindow.on('ready-to-show', () => {
+    connector.on('connect', async (data) => {
+      if (data) {
+        const aggregation = new Aggregation(data, mainWindow?.webContents);
+        aggregation.init();
+      }
+    });
+
+    connector.start();
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
