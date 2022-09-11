@@ -82,7 +82,9 @@ const createWindow = async () => {
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
-  mainWindow.on('ready-to-show', () => {
+  mainWindow.on('ready-to-show', async () => {
+    const hasPath = await LCUConnector.getLCUPathFromProcess();
+    if (!hasPath) mainWindow?.webContents?.send('status-update', 'error');
     ipcMain.on('fetch-data', () => {
       const connector2 = new LCUConnector();
       connector2.on('connect', async (data) => {
