@@ -83,6 +83,16 @@ const createWindow = async () => {
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
   mainWindow.on('ready-to-show', () => {
+    ipcMain.on('fetch-data', () => {
+      const connector2 = new LCUConnector();
+      connector2.on('connect', async (data) => {
+        if (data) {
+          const aggregation = new Aggregation(data, mainWindow?.webContents);
+          aggregation.init();
+        }
+      });
+      connector2.start();
+    });
     connector.on('connect', async (data) => {
       if (data) {
         const aggregation = new Aggregation(data, mainWindow?.webContents);

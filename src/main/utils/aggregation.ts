@@ -1,10 +1,3 @@
-// Skins
-// Chromas
-// Wards
-// Loot
-// Honor
-// Email Verification
-
 import axios from 'axios';
 import { WebContents } from 'electron';
 import https from 'https';
@@ -40,14 +33,21 @@ class Aggregation {
 
   private async aggregate() {
     this.webContents?.send('status-update', 'starting');
-    await Promise.all(
+    const res = await Promise.all(
       requestedData.map(async (item, i) => {
         const progress = Math.abs(((i + 1) / requestedData.length) * 100);
         this.webContents?.send('opperation-progress', progress);
-        const data = await this.call(item.endpoint);
-        return { [item.key]: data.data };
+        const data = await this.call(item.endpoint)
+          .catch((err) => {
+            throw err;
+          })
+          .then((x) => ({ [item.key]: x }));
+        return data;
       })
-    );
+    ).catch(() => this.webContents?.send('status-update', 'error'));
+    if (res) {
+      this.webContents?.send('status-update', 'done');
+    }
   }
 
   private formatEndpoint(endpoint: string) {
@@ -60,19 +60,23 @@ class Aggregation {
     const agent = new https.Agent({
       rejectUnauthorized: false,
     });
-    const res = await axios(
-      `${this.request.url}${this.formatEndpoint(endpoint)}`,
-      {
-        method: 'GET',
-        httpsAgent: agent,
-        data,
-        headers: {
-          Accept: 'application/json',
-          Authorization: this.request.auth,
-        },
-      }
-    );
-    return res;
+    try {
+      const res = await axios(
+        `${this.request.url}${this.formatEndpoint(endpoint)}`,
+        {
+          method: 'GET',
+          httpsAgent: agent,
+          data,
+          headers: {
+            Accept: 'application/json',
+            Authorization: this.request.auth,
+          },
+        }
+      );
+      return res;
+    } catch (err: any) {
+      throw new Error(err);
+    }
   }
 
   async init() {
