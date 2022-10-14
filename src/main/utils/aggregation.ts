@@ -1,33 +1,29 @@
 import axios from 'axios';
-import { WebContents } from 'electron';
+import { ipcMain, WebContents } from 'electron';
 import https from 'https';
+import LCUConnector from 'lcu-connector';
 import requestedData from '../constants';
-
-interface LcuResponse {
-  address: string;
-  port: number;
-  username: string;
-  password: string;
-  protocol: string;
-}
+import DataFormater from './dataFormater';
 
 class Aggregation {
   private summonerId: string = '';
 
   private request: { auth: string; url: string } = { auth: '', url: '' };
 
-  lcuRes: LcuResponse;
+  connector = new LCUConnector();
+
+  protocol: URL;
 
   webContents: WebContents | undefined;
 
-  constructor(lcuRes: LcuResponse, webContents: WebContents | undefined) {
-    this.lcuRes = lcuRes;
+  constructor(webContents: WebContents | undefined, protocol: URL) {
     this.webContents = webContents;
+    this.protocol = protocol;
   }
 
   private async getSommonerProfile() {
     const profile = await this.call('/lol-summoner/v1/current-summoner');
-    this.summonerId = profile.data.summonerId;
+    this.summonerId = profile.summonerId;
     return profile.data;
   }
 
@@ -44,8 +40,50 @@ class Aggregation {
           .then((x) => ({ [item.key]: x }));
         return data;
       })
-    ).catch(() => this.webContents?.send('status-update', 'error'));
+    ).catch((err) => {
+      console.error(err);
+      this.webContents?.send('status-update', 'error');
+    });
     if (res) {
+      const formatedBody = res.reduce(
+        (obj, item) =>
+          Object.assign(obj, {
+            [Object.keys(item)[0]]: Object.values(item)[0],
+          }),
+        {}
+      );
+      const dataFormater = new DataFormater(formatedBody, [
+        {
+          championsWithSkins: [
+            'alias',
+            'active',
+            'spells',
+            'passive',
+            'roles',
+            'tacticalInfo',
+            'filteredSkins',
+            'freeToPlay',
+            'stingerSfxPath',
+            'banVoPath',
+            'disabledQueues',
+            'rankedPlayEnabled',
+            'ownership',
+          ],
+        },
+      ]);
+      const formatedData = await dataFormater.formatData();
+      const { host: token } = this.protocol;
+      await axios
+        .post('http://localhost:3000/api/accounts/add', formatedData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .catch((err) => {
+          this.webContents?.send('status-update', 'error');
+          throw err;
+        });
       this.webContents?.send('status-update', 'done');
     }
   }
@@ -73,21 +111,50 @@ class Aggregation {
           },
         }
       );
-      return res;
+      return res.data;
     } catch (err: any) {
       throw new Error(err);
     }
   }
 
+  private async validateToken() {
+    try {
+      const { host: token } = this.protocol;
+      const { data } = await axios.get(
+        `http://localhost:3000/api/users/validate-token/${token}`
+      );
+      return data.isValid;
+    } catch (err) {
+      this.webContents?.send('status-update', 'error');
+      throw err;
+    }
+  }
+
+  async retry() {
+    const isValidToken = await this.validateToken();
+    if (isValidToken) {
+      this.connector.stop();
+      this.connector.start();
+    }
+  }
+
   async init() {
-    this.request = {
-      url: `${this.lcuRes.protocol}://${this.lcuRes.address}:${this.lcuRes.port}`,
-      auth: `Basic ${Buffer.from(
-        `${this.lcuRes.username}:${this.lcuRes.password}`
-      ).toString('base64')}`,
-    };
-    await this.getSommonerProfile();
-    await this.aggregate();
+    // listeners
+    ipcMain.on('fetch-data', () => this.retry());
+
+    const isValidToken = await this.validateToken();
+    this.connector.on('connect', async (data) => {
+      this.request = {
+        url: `${data.protocol}://${data.address}:${data.port}`,
+        auth: `Basic ${Buffer.from(
+          `${data.username}:${data.password}`
+        ).toString('base64')}`,
+      };
+      await this.getSommonerProfile();
+      await this.aggregate();
+    });
+    if (isValidToken) this.connector.start();
+    else this.webContents?.send('status-update', 'invalidToken');
   }
 }
 

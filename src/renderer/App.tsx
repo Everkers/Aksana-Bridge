@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { ClimbingBoxLoader, HashLoader } from 'react-spinners';
 import './App.css';
 
 const Main = () => {
@@ -18,7 +19,51 @@ const Main = () => {
   };
   return (
     <div className="w-full h-screen bg-neutral-focus ">
-      <div className="w-full flex flex-col items-center justify-center py-32">
+      <div className="w-full flex h-full flex-col items-center justify-center py-32">
+        {(status === 'ready' || !status) && (
+          <div className="text-center flex flex-col items-center justify-center h-full">
+            <ClimbingBoxLoader size={20} color="#6941C6" />
+            <h1 className="text-xl mt-5">Waiting for a request</h1>
+            <p className="opacity-50 mt-1 text-center max-w-lg">
+              To add a new account go to the main website and click on add
+              account.
+            </p>
+          </div>
+        )}
+        {status === 'starting' && (
+          <div className="text-center flex flex-col items-center justify-center h-full">
+            <HashLoader size={100} color="#6941C6" />
+            <h1 className="text-xl mt-5">Packing Your Account&apos;s Data</h1>
+            <p className="opacity-50 mt-1 text-center max-w-lg">
+              This process may take sometime, depending on how much skins and
+              champions your account have.
+            </p>
+          </div>
+        )}
+        {status === 'invalidToken' && (
+          <>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="w-36 h-36 text-error"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+              />
+            </svg>
+
+            <h1 className="text-xl">Invalid or expired token</h1>
+            <p className="opacity-50 text-center mt-1 max-w-lg">
+              You may be using an expired token, try to logout and loging in
+              again!
+            </p>
+          </>
+        )}
         {status === 'done' && (
           <>
             <svg
@@ -36,7 +81,7 @@ const Main = () => {
               />
             </svg>
             <h1 className="text-xl">Profile has been added</h1>
-            <p className="opacity-50 mt-1">
+            <p className="opacity-50 mt-1 text-center max-w-lg">
               Go back to the website and your account should appear there
             </p>
           </>
@@ -59,7 +104,7 @@ const Main = () => {
             </svg>
 
             <h1 className="text-xl">Something went wrong!</h1>
-            <p className="opacity-50 mt-1">
+            <p className="opacity-50 text-center mt-1 max-w-lg">
               We had issues retrieving your profile&apos;s data, restart your
               client and try again
             </p>

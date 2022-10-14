@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import LCUConnector from 'lcu-connector';
@@ -82,27 +82,59 @@ const createWindow = async () => {
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
+  const appIsLocked = app.requestSingleInstanceLock();
+  if (!appIsLocked) {
+    app.quit();
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    app.on('second-instance', (_e, argv) => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        log.warn(
+          'Attempt to open another instance of the app. Focusing the existing window.'
+        );
+        mainWindow.focus();
+
+        // Check if the second-instance was fired through a protocol link.
+        const isProtocol = argv.find((arg) =>
+          arg.startsWith('showcase-app://')
+        );
+        if (isProtocol) {
+          log.info('protocol link detected');
+          const formattedURL: URL = new URL(isProtocol);
+          const aggregation = new Aggregation(
+            mainWindow?.webContents,
+            formattedURL
+          );
+          aggregation.init();
+        }
+        if (process.defaultApp) {
+          if (process.argv.length >= 2) {
+            app.setAsDefaultProtocolClient('showcase-app', process.execPath, [
+              '-r',
+              path.join(
+                __dirname,
+                '..',
+                '..',
+                'node_modules',
+                'ts-node',
+                'register',
+                'transpile-only.js'
+              ),
+              path.resolve(),
+            ]);
+          }
+        } else {
+          app.setAsDefaultProtocolClient('showcase-app');
+        }
+      }
+    });
+  }
+
   mainWindow.on('ready-to-show', async () => {
     const hasPath = await LCUConnector.getLCUPathFromProcess();
     if (!hasPath) mainWindow?.webContents?.send('status-update', 'error');
-    ipcMain.on('fetch-data', () => {
-      const connector2 = new LCUConnector();
-      connector2.on('connect', async (data) => {
-        if (data) {
-          const aggregation = new Aggregation(data, mainWindow?.webContents);
-          aggregation.init();
-        }
-      });
-      connector2.start();
-    });
-    connector.on('connect', async (data) => {
-      if (data) {
-        const aggregation = new Aggregation(data, mainWindow?.webContents);
-        aggregation.init();
-      }
-    });
-
-    connector.start();
+    mainWindow?.webContents?.send('status-update', 'ready');
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
