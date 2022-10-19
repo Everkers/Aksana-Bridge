@@ -3,19 +3,18 @@
   "keywords": [
     "league of legennds"
   ],
-  "homepage": "https://github.com/Everkers/league-showcase#readme",
+  "homepage": "https://github.com/Everkers/league-showcase-bridge#readme",
   "bugs": {
-    "url": "https://github.com/Everkers/league-showcase/issues"
+    "url": "https://github.com/Everkers/league-showcase-bridge/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Everkers/league-showcase.git"
+    "url": "git+https://github.com/Everkers/league-showcase-bridge.git"
   },
   "license": "MIT",
   "author": {
     "name": "Everkers",
-    "email": "everkerss@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "email": "everkerss@gmail.com"
   },
   "main": "./src/main/main.ts",
   "scripts": {
@@ -240,7 +239,7 @@
     "publish": {
       "provider": "github",
       "owner": "Everkers",
-      "repo": "league-showcase"
+      "repo": "league-showcase-bridge"
     }
   },
   "devEngines": {
