@@ -4,9 +4,12 @@ import https from 'https';
 import LCUConnector from 'lcu-connector';
 import requestedData from '../constants';
 import DataFormater from './dataFormater';
+import MMRScrapper from './mmrScrapper';
 
 class Aggregation {
   private summonerId: string = '';
+
+  private profile: any;
 
   private request: { auth: string; url: string } = { auth: '', url: '' };
 
@@ -24,7 +27,17 @@ class Aggregation {
   private async getSommonerProfile() {
     const profile = await this.call('/lol-summoner/v1/current-summoner');
     this.summonerId = profile.summonerId;
+    this.profile = profile;
     return profile.data;
+  }
+
+  private async getCurrentBackgroundImage() {
+    const { backgroundSkinId } = await this.call(
+      `/lol-summoner/v1/summoner-profile?puuid=${this.profile.puuid}`
+    );
+    const championId = backgroundSkinId.toString().slice(0, -3);
+    const background = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-splashes/${championId}/${backgroundSkinId}.jpg`;
+    return background;
   }
 
   private async aggregate() {
@@ -41,7 +54,6 @@ class Aggregation {
         return data;
       })
     ).catch((err) => {
-      console.error(err);
       this.webContents?.send('status-update', 'error');
     });
     if (res) {
@@ -71,15 +83,22 @@ class Aggregation {
           ],
         },
       ]);
+      const mmrScrapper = new MMRScrapper(this.profile.displayName);
+      const accountMMR = await mmrScrapper.getMMR();
       const formatedData = await dataFormater.formatData();
       const { host: token } = this.protocol;
+      const background = await this.getCurrentBackgroundImage();
       await axios
-        .post('http://localhost:3000/api/accounts/add', formatedData, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        })
+        .post(
+          'http://localhost:3001/api/accounts/add',
+          { ...formatedData, mmr: { ...accountMMR }, background },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
         .catch((err) => {
           this.webContents?.send('status-update', 'error');
           throw err;
@@ -121,7 +140,7 @@ class Aggregation {
     try {
       const { host: token } = this.protocol;
       const { data } = await axios.get(
-        `http://localhost:3000/api/users/validate-token/${token}`
+        `http://localhost:3001/api/users/validate-token/${token}`
       );
       return data.isValid;
     } catch (err) {
@@ -153,6 +172,7 @@ class Aggregation {
       await this.getSommonerProfile();
       await this.aggregate();
     });
+    this.connector.start();
     if (isValidToken) this.connector.start();
     else this.webContents?.send('status-update', 'invalidToken');
   }

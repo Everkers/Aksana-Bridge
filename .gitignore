@@ -21,6 +21,7 @@ node_modules
 release/app/dist
 release/build
 .erb/dll
+electron-builder.yml
 
 .idea
 npm-debug.log.*

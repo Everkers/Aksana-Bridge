@@ -4,6 +4,10 @@ const requestedData: { key: string; endpoint: string }[] = [
     endpoint: '/lol-champions/v1/inventories/{summonerId}/champions',
   },
   {
+    key: 'profile',
+    endpoint: '/lol-summoner/v1/current-summoner',
+  },
+  {
     key: 'RP',
     endpoint: '/lol-inventory/v1/wallet/RP',
   },

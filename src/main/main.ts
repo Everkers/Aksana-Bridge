@@ -9,15 +9,13 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, Menu, shell, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import LCUConnector from 'lcu-connector';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import Aggregation from './utils/aggregation';
-
-const connector = new LCUConnector();
 
 class AppUpdater {
   constructor() {
@@ -33,6 +31,14 @@ if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();
 }
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../../assets');
+
+const getAssetPath = (...paths: string[]): string => {
+  return path.join(RESOURCES_PATH, ...paths);
+};
 
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
@@ -55,17 +61,28 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show App',
+      click() {
+        mainWindow?.show();
+      },
+    },
+    {
+      label: 'Quit',
+      click() {
+        mainWindow?.destroy();
+        app.quit();
+      },
+    },
+  ]);
+
+  const appIcon = new Tray(getAssetPath('icon.png'));
+  appIcon.on('click', () => mainWindow?.show());
+  appIcon.setContextMenu(contextMenu);
   if (isDebug) {
     await installExtensions();
   }
-
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../../assets');
-
-  const getAssetPath = (...paths: string[]): string => {
-    return path.join(RESOURCES_PATH, ...paths);
-  };
 
   mainWindow = new BrowserWindow({
     show: false,
@@ -93,11 +110,11 @@ const createWindow = async () => {
         log.warn(
           'Attempt to open another instance of the app. Focusing the existing window.'
         );
-        mainWindow.focus();
+        mainWindow.show();
 
         // Check if the second-instance was fired through a protocol link.
         const isProtocol = argv.find((arg) =>
-          arg.startsWith('showcase-app://')
+          arg.startsWith('lol-showcase-app://')
         );
         if (isProtocol) {
           log.info('protocol link detected');
@@ -108,29 +125,28 @@ const createWindow = async () => {
           );
           aggregation.init();
         }
-        if (process.defaultApp) {
-          if (process.argv.length >= 2) {
-            app.setAsDefaultProtocolClient('showcase-app', process.execPath, [
-              '-r',
-              path.join(
-                __dirname,
-                '..',
-                '..',
-                'node_modules',
-                'ts-node',
-                'register',
-                'transpile-only.js'
-              ),
-              path.resolve(),
-            ]);
-          }
-        } else {
-          app.setAsDefaultProtocolClient('showcase-app');
-        }
       }
     });
   }
-
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient('lol-showcase-app', process.execPath, [
+        '-r',
+        path.join(
+          __dirname,
+          '..',
+          '..',
+          'node_modules',
+          'ts-node',
+          'register',
+          'transpile-only.js'
+        ),
+        path.resolve(),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient('lol-showcase-app');
+  }
   mainWindow.on('ready-to-show', async () => {
     const hasPath = await LCUConnector.getLCUPathFromProcess();
     if (!hasPath) mainWindow?.webContents?.send('status-update', 'error');
@@ -138,11 +154,12 @@ const createWindow = async () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-    }
+  });
+
+  mainWindow.on('close', (e: any) => {
+    e.preventDefault();
+    mainWindow?.hide();
+    return false;
   });
 
   mainWindow.on('closed', () => {
@@ -162,6 +179,10 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 };
+
+app.setLoginItemSettings({
+  openAtLogin: true,
+});
 
 /**
  * Add event listeners...
