@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { ClimbingBoxLoader, HashLoader } from 'react-spinners';
 import './App.css';
+import AutoUpdater from './components/AutoUpdater';
 
 const Main = () => {
   const [status, setStatus] = useState<string>();
@@ -19,6 +20,7 @@ const Main = () => {
   };
   return (
     <div className="w-full h-screen bg-neutral-focus ">
+      <AutoUpdater />
       <div className="w-full flex h-full flex-col items-center justify-center py-32">
         {(status === 'ready' || !status) && (
           <div className="text-center flex flex-col items-center justify-center h-full">

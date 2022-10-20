@@ -24,7 +24,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never",
-    "deploy": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
+    "deploy": "set GH_TOKEN=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 && ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
     "prepare": "husky install",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
@@ -93,6 +93,8 @@
     }
   },
   "dependencies": {
+    "@headlessui/react": "^1.7.3",
+    "@heroicons/react": "^2.0.12",
     "axios": "^0.27.2",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",

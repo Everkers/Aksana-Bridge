@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, Menu, shell, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, shell, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import LCUConnector from 'lcu-connector';
@@ -148,6 +148,7 @@ const createWindow = async () => {
     app.setAsDefaultProtocolClient('lol-showcase-app');
   }
   mainWindow.on('ready-to-show', async () => {
+    autoUpdater.checkForUpdatesAndNotify();
     const hasPath = await LCUConnector.getLCUPathFromProcess();
     if (!hasPath) mainWindow?.webContents?.send('status-update', 'error');
     mainWindow?.webContents?.send('status-update', 'ready');
@@ -182,6 +183,21 @@ const createWindow = async () => {
 
 app.setLoginItemSettings({
   openAtLogin: true,
+});
+
+/**
+ * Auto Updater
+ */
+
+autoUpdater.on('update-available', () => {
+  mainWindow?.webContents.send('update_available');
+});
+autoUpdater.on('update-downloaded', () => {
+  mainWindow?.webContents.send('update_downloaded');
+});
+
+ipcMain.on('restart_app', () => {
+  autoUpdater.quitAndInstall();
 });
 
 /**
