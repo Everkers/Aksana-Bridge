@@ -25,7 +25,7 @@ const Main = () => {
         {(status === 'ready' || !status) && (
           <div className="text-center flex flex-col items-center justify-center h-full">
             <ClimbingBoxLoader size={20} color="#6941C6" />
-            <h1 className="text-xl mt-5">Waiting for a request</h1>
+            <h1 className="text-xl mt-5">Waiting for a requestt</h1>
             <p className="opacity-50 mt-1 text-center max-w-lg">
               To add a new account go to the main website and click on add
               account.
