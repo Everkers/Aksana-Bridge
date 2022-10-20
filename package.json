@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Everkers/league-showcase-bridge.git"
+    "url": "git+https://github.com/Everkers/Aksana-Updates.git"
   },
   "license": "MIT",
   "author": {
@@ -24,7 +24,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never",
-    "deploy": "set GH_TOKEN=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 && ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
+    "deploy": "set GH_TOKEN=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 && ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish always",
     "prepare": "husky install",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
@@ -241,7 +241,7 @@
     "publish": {
       "provider": "github",
       "owner": "Everkers",
-      "repo": "league-showcase-bridge"
+      "repo": "Aksana-Updates"
     }
   },
   "devEngines": {
