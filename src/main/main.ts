@@ -151,7 +151,7 @@ const createWindow = async () => {
     autoUpdater.checkForUpdatesAndNotify();
     const hasPath = await LCUConnector.getLCUPathFromProcess();
     if (!hasPath) mainWindow?.webContents?.send('status-update', 'error');
-    mainWindow?.webContents?.send('status-update', 'ready');
+    else mainWindow?.webContents?.send('status-update', 'ready');
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }

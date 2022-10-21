@@ -190,6 +190,9 @@
       "node_modules",
       "package.json"
     ],
+    "nsis": {
+      "deleteAppDataOnUninstall": true
+    },
     "afterSign": ".erb/scripts/notarize.js",
     "mac": {
       "target": {
