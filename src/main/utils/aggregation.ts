@@ -90,7 +90,7 @@ class Aggregation {
       const background = await this.getCurrentBackgroundImage();
       await axios
         .post(
-          'http://localhost:3001/api/accounts/add',
+          'http://api.aksana.lol/api/accounts/add',
           { ...formatedData, mmr: { ...accountMMR }, background },
           {
             headers: {
@@ -140,7 +140,7 @@ class Aggregation {
     try {
       const { host: token } = this.protocol;
       const { data } = await axios.get(
-        `http://localhost:3001/api/users/validate-token/${token}`
+        `http://api.aksana.lol/api/users/validate-token/${token}`
       );
       return data.isValid;
     } catch (err) {
